@@ -11,7 +11,6 @@ def get_loc_search_results(term):
     encoded_term = urllib.parse.quote(term)
     req = requests.get(url_loc_search + encoded_term)
     if req.ok:
-        locations = req.text.strip("_")
 
         # open file and update dict
         with open('locationdata.json', 'a+') as f:
@@ -25,8 +24,6 @@ def get_loc_search_results(term):
         return locations
     else:
         return None
-
-def set_loc_details(term):
 
 
 try:
@@ -49,31 +46,32 @@ else:
         return sopel.module.NOLIMIT
 
 
-        @sopel.module.commands('gt-setlocation')
-        @sopel.module.example('.gt-setlocation 3003906')
-        def f_locationset(bot, trigger):
-            """Sets a location for a user"""
-            location = trigger.group(2)
-            with open('locationdata.json', 'a+') as f:
-                try:  # try read file
-                    d = json.loads(f.read())
-                    d.update(locations)
-                    f.seek(0)
-                    json.dump(d, f)
-                except:  # nothing in the file
-                    json.dump(locations, f)
+    @sopel.module.commands('gt-setlocation')
+    @sopel.module.example('.gt-setlocation 3003906')
+    def f_locationset(bot, trigger):
+        """Sets a location for a user"""
+        location = trigger.group(2)
+        with open('locationdata.json', 'a+') as f:
+            try:  # try read file
+                d = json.loads(f.read())
+                d.update(locations)
+                f.seek(0)
+                json.dump(d, f)
+                if 'location' in d.keys:
+                    bot.say(d["location"])
+                else:
+                    bot.say('Mate that location doesnt exist')
+            except:  # nothing in the file
+                bot.say('Mate that location doesnt exist')
+
+        return sopel.module.NOLIMIT
+
+
+
 
 
 
 if __name__ == '__main__':
     import sys
 
-    query = 'Doona'
-    results = json.loads(get_loc_search_results(query))
 
-
-
-    if results:
-        print(results)
-    else:
-        print('Can\'t find the your mom for "{}".'.format(query))
