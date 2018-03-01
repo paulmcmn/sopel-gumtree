@@ -11,9 +11,9 @@ def get_loc_search_results(term):
     encoded_term = urllib.parse.quote(term)
     req = requests.get(url_loc_search + encoded_term)
     if req.ok:
-
+        locations = req.text
         # open file and update dict
-        with open('locationdata.json', 'a+') as f:
+        with open('locationdata.json', 'w') as f:
             try: #try read file
                 d = json.loads(f.read())
                 d.update(locations)
@@ -24,6 +24,22 @@ def get_loc_search_results(term):
         return locations
     else:
         return None
+
+def set_loc(term):
+    d = []
+    with open('locationdata.json', 'r') as json_data:
+        d = json.load(json_data)
+        print(d)
+        json_data.close()
+        type(d)
+        print(type(d))
+        try:
+            print(d['term']['who'])
+        except KeyError:
+            print("ID doesn't exist")
+
+
+
 
 
 try:
@@ -45,33 +61,26 @@ else:
             bot.say('Can\'t find any locations for "{}".'.format(phrase), trigger.sender)
         return sopel.module.NOLIMIT
 
-
     @sopel.module.commands('gt-setlocation')
     @sopel.module.example('.gt-setlocation 3003906')
     def f_locationset(bot, trigger):
         """Sets a location for a user"""
         location = trigger.group(2)
-        with open('locationdata.json', 'a+') as f:
-            try:  # try read file
-                d = json.loads(f.read())
-                d.update(locations)
-                f.seek(0)
-                json.dump(d, f)
-                if 'location' in d.keys:
-                    bot.say(d["location"])
-                else:
-                    bot.say('Mate that location doesnt exist')
-            except:  # nothing in the file
-                bot.say('Mate that location doesnt exist')
-
-        return sopel.module.NOLIMIT
-
-
-
-
+        set_loc(location)
 
 
 if __name__ == '__main__':
     import sys
+    query = 'Marr'
+    results1 = json.loads(get_loc_search_results(query))
+    quer = 'Sed'
+    results1 = json.loads(get_loc_search_results(quer))
+    print(results1)
+    query1 = '_3006407'
+    output = set_loc(query1)
+    print(output)
+
+
+
 
 
