@@ -82,7 +82,3 @@ if __name__ == '__main__':
     query1 = '_3006407'
     output = set_loc(query1)
     print(output)
-
-
-
-
