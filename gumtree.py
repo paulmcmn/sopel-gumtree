@@ -9,37 +9,36 @@ url_loc_search = 'https://www.gumtree.com.au/j-suggest-location.json?query='
 def get_loc_search_results(term):
     locations = []
     encoded_term = urllib.parse.quote(term)
-    req = requests.get(url_loc_search + encoded_term)
-    if req.ok:
-        locations = req.text
+    req = requests.get(url_loc_search + encoded_term).json()
+    print(type(req))
+    if '1'=='1':
+        locations = req
         # open file and update dict
-        with open('locationdata.json', 'w') as f:
+        with open('locationdata.json', 'r+') as f:
             try: #try read file
                 d = json.loads(f.read())
+                print('Current File contents')
+                print(d)
                 d.update(locations)
                 f.seek(0)
                 json.dump(d, f)
             except: #nothing in the file
                 json.dump(locations,f)
+
         return locations
     else:
         return None
 
-def set_loc(term):
-    d = []
-    with open('locationdata.json', 'r') as json_data:
-        d = json.load(json_data)
-        print(d)
+def set_loc(gtlocid):
+    with open('locationdata.json', 'r+') as json_data:
+        d = json.loads(json_data.read())
         json_data.close()
-        type(d)
-        print(type(d))
-        try:
-            print(d['term']['who'])
-        except KeyError:
-            print("ID doesn't exist")
-
-
-
+        if gtlocid in d.keys():
+            bot.db.set_nick_value(trigger.nick, 'gtlocid', term)
+            gtcity = d.get("gtlocid")
+            bot.say('I have now set your Location as %s' % gtcity)
+        else:
+            bot.say('I cant find location %s' % gtlocid)
 
 
 try:
@@ -65,21 +64,24 @@ else:
     @sopel.module.example('.gt-setlocation 3003906')
     def f_locationset(bot, trigger):
         """Sets a location for a user"""
+        if not trigger.group(2):
+            bot.reply('No funny buggers.. give me something to search for')
+            return NOLIMIT
         location = trigger.group(2)
         set_loc(location)
+
 
 
 if __name__ == '__main__':
     import sys
     query = 'Marr'
-    results1 = json.loads(get_loc_search_results(query))
+    results1 = get_loc_search_results(query)
     quer = 'Sed'
-    results1 = json.loads(get_loc_search_results(quer))
+    results1 = get_loc_search_results(quer)
     print(results1)
     query1 = '_3006407'
     output = set_loc(query1)
     print(output)
-
 
 
 
