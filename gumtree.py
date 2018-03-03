@@ -3,8 +3,17 @@ import re, requests, os
 import urllib
 import json
 
+url_base = 'https://www.gumtree.com.au'
 url_loc_search = 'https://www.gumtree.com.au/j-suggest-location.json?query='
+
+url_content_search = 'https://www.gumtree.com.au/ws/search.json?categoryId={}&keywords={}&locationId={}&locationStr={}&pageNum=1&pageSize=24&previousCategoryId=0&radius={}&searchFromSearchBar=true&sortByName=date' \
+
 gtauradius = [0, 2, 5, 10, 20, 50, 100, 250, 500]
+default_locid = 0
+default_city = 'Australia'
+default_rad = 0 ## default with no location set
+default_rad_locpresent = 100 ## defaull radius where a location is specified
+default_category = 0
 
 
 
@@ -27,6 +36,7 @@ def get_loc_search_results(term):
                 f.seek(0)
                 json.dump(d, f)
             except:
+                ##TODO if file doesnt exist, always add the default location information.
                 json.dump(locations, f)
         return locations
     else:
@@ -58,6 +68,31 @@ def get_city(gtlocid):
 def set_rad(gtradius):
     return min(gtauradius, key=lambda x: abs(x - gtradius))
 
+def search_gumtree(locid,radius,term):
+
+    ##TODO support error handling
+    if radius is None:
+        radius = default_rad_locpresent ##setting radius assuming locid is not null
+
+    if locid is None: ## if location id is null then set everything to default to australia
+        locid = default_locid
+        radius = default_rad
+        city = default_city
+    else:
+        city = get_city(locid) ## loc id is formed, thus pickup city and format appropriately
+
+    searchstr = url_content_search.format(default_category, urllib.parse.quote(term), locid.strip('_'), urllib.parse.quote(city), str(radius))
+    print(searchstr)
+    request = requests.get(searchstr)
+    if request.status_code == 200:
+
+        return request.text
+    else:
+        # TODO: Add error handlings
+        print("Server returned code: " + str(request.status_code))
+        print(searchstr)
+        return []
+
 
 try:
     import sopel.module
@@ -84,7 +119,7 @@ else:
         """Sets a location for a user"""
         if not trigger.group(2):
             bot.reply('No funny buggers.. give me something to search for')
-            return NOLIMIT
+            return None
         location = trigger.group(2)
         results = set_loc(location)
         if results and len(results):
@@ -121,11 +156,23 @@ else:
         gt_search_string = trigger.group(2)
         ##get locid
         gt_search_locid = bot.db.get_nick_value(trigger.nick, 'gtlocid')
+
         ##get city details
         gt_search_city = str(get_city(gt_search_locid))
         gt_search_radius = bot.db.get_nick_value(trigger.nick, 'gtradius')
-        bot.say('So tomorrow, we can figure out how to search gumtree for %s, within %s kms of %s ' % (gt_search_string, gt_search_radius, gt_search_city))
-        
+        results = json.loads(search_gumtree(gt_search_locid,gt_search_radius,gt_search_string))
+
+        responses = str(results['data']['breadCrumbs']['numberFound'])
+        bot.say('%s results found on gumtree for %s, within %s kms of %s ' % (responses, gt_search_string, gt_search_radius, str(gt_search_city)))
+        count = 0
+        for result in results['data']['results']['resultList']:
+            print('trying to print result')
+            print(result)
+            if count == 3:
+                break
+            bot.say('%s, posted %s' % (str(result['title']), str(result['age'])))
+            count = count + 1
+
 if __name__ == '__main__':
     import sys
     query = 'Marr'
@@ -136,7 +183,3 @@ if __name__ == '__main__':
     query1 = '_3006407'
     output = set_loc(query1)
     print(output)
-
-
-
-
